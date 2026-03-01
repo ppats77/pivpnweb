@@ -1,0 +1,7 @@
+V	310228120000Z		01	unknown	/CN=server_abc123
+V	270615120000Z		02	unknown	/CN=alice-phone
+V	261231120000Z		03	unknown	/CN=bob-laptop
+V	280101120000Z		04	unknown	/CN=charlie.tablet
+R	260601120000Z	250101120000Z	05	unknown	/CN=revoked-user
+V	250101120000Z		06	unknown	/CN=expired-cert
+V	290801120000Z		07	unknown	/CN=disabled-client

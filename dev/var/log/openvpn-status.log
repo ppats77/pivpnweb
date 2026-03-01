@@ -1,0 +1,11 @@
+OpenVPN CLIENT LIST
+Updated,2026-02-28 12:00:00
+HEADER	CLIENT_LIST	Common Name	Real Address	Virtual Address	Virtual IPv6 Address	Bytes Received	Bytes Sent	Connected Since	Connected Since (time_t)	Username	Client ID	Peer ID	Data Channel Cipher
+CLIENT_LIST	alice-phone	203.0.113.42:51234	10.8.0.2		1048576	2097152	2026-02-28 10:30:00	1740739800	UNDEF	0	0	AES-256-GCM
+CLIENT_LIST	bob-laptop	198.51.100.7:44321	10.8.0.3		524288	8388608	2026-02-28 11:15:00	1740742500	UNDEF	1	1	AES-256-GCM
+HEADER	ROUTING_TABLE	Virtual Address	Common Name	Real Address	Last Ref	Last Ref (time_t)
+ROUTING_TABLE	10.8.0.2	alice-phone	203.0.113.42:51234	2026-02-28 12:00:00	1740744000
+ROUTING_TABLE	10.8.0.3	bob-laptop	198.51.100.7:44321	2026-02-28 12:00:00	1740744000
+GLOBAL STATS
+Max bcast/mcast queue length,0
+END

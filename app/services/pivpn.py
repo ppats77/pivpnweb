@@ -14,16 +14,21 @@ from typing import Optional
 
 # --- Configuration -----------------------------------------------------------
 
-OPENVPN_SETUP_VARS = "/etc/pivpn/openvpn/setupVars.conf"
-WIREGUARD_SETUP_VARS = "/etc/pivpn/wireguard/setupVars.conf"
+# DEV_MODE: when set, reads files directly (no sudo) and stubs CLI commands.
+# PIVPN_ROOT: prefix for all config paths (e.g. "./dev" to use ./dev/etc/...).
+DEV_MODE = os.environ.get("PIVPN_DEV", "").lower() in ("1", "true", "yes")
+_ROOT = os.environ.get("PIVPN_ROOT", "")
 
-OPENVPN_INDEX = "/etc/openvpn/easy-rsa/pki/index.txt"
-OPENVPN_STATUS_LOG = "/var/log/openvpn-status.log"
-OPENVPN_CCD_DIR = "/etc/openvpn/ccd"
+OPENVPN_SETUP_VARS = f"{_ROOT}/etc/pivpn/openvpn/setupVars.conf"
+WIREGUARD_SETUP_VARS = f"{_ROOT}/etc/pivpn/wireguard/setupVars.conf"
 
-WIREGUARD_CONF = "/etc/wireguard/wg0.conf"
-WIREGUARD_CLIENTS_TXT = "/etc/wireguard/configs/clients.txt"
-WIREGUARD_CONFIGS_DIR = "/etc/wireguard/configs"
+OPENVPN_INDEX = f"{_ROOT}/etc/openvpn/easy-rsa/pki/index.txt"
+OPENVPN_STATUS_LOG = f"{_ROOT}/var/log/openvpn-status.log"
+OPENVPN_CCD_DIR = f"{_ROOT}/etc/openvpn/ccd"
+
+WIREGUARD_CONF = f"{_ROOT}/etc/wireguard/wg0.conf"
+WIREGUARD_CLIENTS_TXT = f"{_ROOT}/etc/wireguard/configs/clients.txt"
+WIREGUARD_CONFIGS_DIR = f"{_ROOT}/etc/wireguard/configs"
 
 
 # --- Data classes ------------------------------------------------------------
@@ -88,6 +93,13 @@ def _parse_setup_vars_text(text: str) -> dict:
 
 
 def _sudo_read(path: str) -> Optional[str]:
+    # In dev mode, read files directly without sudo
+    if DEV_MODE:
+        try:
+            with open(path) as f:
+                return f.read()
+        except (FileNotFoundError, PermissionError):
+            return None
     try:
         proc = subprocess.run(
             ["sudo", "cat", path],
@@ -100,7 +112,29 @@ def _sudo_read(path: str) -> Optional[str]:
     return None
 
 
+def _sudo_write(path: str, content: str) -> bool:
+    """Write content to a file, using sudo in production or direct write in dev."""
+    if DEV_MODE:
+        try:
+            with open(path, "w") as f:
+                f.write(content)
+            return True
+        except OSError:
+            return False
+    try:
+        proc = subprocess.run(
+            ["sudo", "tee", path],
+            input=content, capture_output=True, text=True, timeout=10,
+        )
+        return proc.returncode == 0
+    except (subprocess.TimeoutExpired, OSError):
+        return False
+
+
 def _sudo_run(cmd: list[str], timeout: int = 30) -> subprocess.CompletedProcess:
+    if DEV_MODE:
+        # Stub: return success with a message
+        return subprocess.CompletedProcess(cmd, 0, stdout="[DEV] Command stubbed OK\n", stderr="")
     return subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
 
 
@@ -132,6 +166,11 @@ def detect_vpn_protocol() -> str:
 def get_vpn_version() -> str:
     """Get the version string of the installed VPN."""
     protocol = detect_vpn_protocol()
+
+    if DEV_MODE:
+        if protocol in ("openvpn", "both"):
+            return "OpenVPN v2.6.0-dev"
+        return "WireGuard v1.0-dev"
 
     if protocol in ("openvpn", "both"):
         try:
@@ -336,14 +375,9 @@ def enable_openvpn_client(name: str) -> tuple[bool, str]:
     )
     new_content = new_line1 + "\n"
 
-    try:
-        proc = subprocess.run(
-            ["sudo", "tee", ccd_path],
-            input=new_content, capture_output=True, text=True, timeout=10,
-        )
-        return proc.returncode == 0, proc.stdout + proc.stderr
-    except subprocess.TimeoutExpired:
-        return False, "Command timed out"
+    if _sudo_write(ccd_path, new_content):
+        return True, "Client enabled"
+    return False, "Failed to write CCD file"
 
 
 def disable_openvpn_client(name: str) -> tuple[bool, str]:
@@ -368,14 +402,9 @@ def disable_openvpn_client(name: str) -> tuple[bool, str]:
     # Replace IP with 0.0.0.1 and append original IP as comment
     new_content = "ifconfig-push 0.0.0.1 255.255.255.0\n" + f"#{current_ip}\n"
 
-    try:
-        proc = subprocess.run(
-            ["sudo", "tee", ccd_path],
-            input=new_content, capture_output=True, text=True, timeout=10,
-        )
-        return proc.returncode == 0, proc.stdout + proc.stderr
-    except subprocess.TimeoutExpired:
-        return False, "Command timed out"
+    if _sudo_write(ccd_path, new_content):
+        return True, "Client disabled"
+    return False, "Failed to write CCD file"
 
 
 def revoke_openvpn_client(name: str) -> tuple[bool, str]:
@@ -395,7 +424,7 @@ def get_openvpn_client_config(name: str) -> Optional[str]:
     if not user:
         return None
 
-    path = f"/home/{user}/ovpns/{name}.ovpn"
+    path = f"{_ROOT}/home/{user}/ovpns/{name}.ovpn"
     content = _sudo_read(path)
     return content
 
@@ -406,7 +435,7 @@ def get_openvpn_config_path(name: str) -> Optional[str]:
     user = setup.get("install_user", "")
     if not user:
         return None
-    return f"/home/{user}/ovpns/{name}.ovpn"
+    return f"{_ROOT}/home/{user}/ovpns/{name}.ovpn"
 
 
 # --- WireGuard ---------------------------------------------------------------
@@ -574,7 +603,7 @@ def get_wireguard_client_config(name: str) -> Optional[str]:
     if not user:
         return None
 
-    path = f"/home/{user}/configs/{name}.conf"
+    path = f"{_ROOT}/home/{user}/configs/{name}.conf"
     content = _sudo_read(path)
     if content is None:
         # Fallback to /etc/wireguard/configs/
@@ -588,7 +617,7 @@ def get_wireguard_config_path(name: str) -> Optional[str]:
     user = setup.get("install_user", "")
     if not user:
         return None
-    return f"/home/{user}/configs/{name}.conf"
+    return f"{_ROOT}/home/{user}/configs/{name}.conf"
 
 
 # --- Unified interface -------------------------------------------------------
