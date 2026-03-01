@@ -1,0 +1,16 @@
+services:
+  pivpn-web:
+    build: .
+    container_name: pivpn-web
+    restart: unless-stopped
+    environment:
+      - SECRET_KEY=${SECRET_KEY:-change-me-in-production}
+    volumes:
+      - /etc/pivpn:/etc/pivpn:ro
+      - /etc/openvpn:/etc/openvpn
+      - /etc/wireguard:/etc/wireguard
+      - /var/log/openvpn-status.log:/var/log/openvpn-status.log:ro
+      - /usr/local/bin/pivpn:/usr/local/bin/pivpn:ro
+      - /opt/pivpn:/opt/pivpn:ro
+    network_mode: host
+    privileged: true
