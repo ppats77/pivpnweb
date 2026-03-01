@@ -1,0 +1,11 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.env
+.secret_key
+*.log
+venv/
+.venv/
+pivpn-source/

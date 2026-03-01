@@ -1,0 +1,239 @@
+{% extends "base.html" %}
+
+{% block css %}
+<link type="text/css" rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
+{% endblock %}
+
+{% block body %}
+<script src="{{ url_for('static', filename='js/mobile.js') }}"></script>
+<script src="{{ url_for('static', filename='js/checkName.js') }}"></script>
+
+<nav>
+    <a href="{{ url_for('main.dashboard') }}">
+        <img alt="PiVPN Logo" src="{{ url_for('static', filename='img/pivpnlogo64.png') }}" width="32">
+    </a>
+    <h1>PiVPN <span class="version">({{ vpn_version }})</span></h1>
+    <button class="reload" onclick="window.location.reload();">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+            <path d="M13.5 2c-5.621 0-10.211 4.443-10.475 10h-3.025l5 6.625 5-6.625h-2.975c.257-3.351 3.06-6 6.475-6 3.584 0 6.5 2.916 6.5 6.5s-2.916 6.5-6.5 6.5c-1.863 0-3.542-.793-4.728-2.053l-2.427 3.216c1.877 1.754 4.389 2.837 7.155 2.837 5.79 0 10.5-4.71 10.5-10.5s-4.71-10.5-10.5-10.5z"/>
+        </svg>
+    </button>
+    <form action="{{ url_for('main.logout') }}" method="POST">
+        <button class="logout" type="submit">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                <polyline points="16 17 21 12 16 7"></polyline>
+                <line x1="21" y1="12" x2="9" y2="12"></line>
+            </svg>
+        </button>
+    </form>
+</nav>
+
+<div class="container">
+    {# Flash messages #}
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    <div class="flash-messages">
+        {% for category, message in messages %}
+        <div class="flash flash-{{ category }}">{{ message }}</div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    {% endwith %}
+
+    {# Active clients table #}
+    <table>
+        <tr>
+            <th class="border-bottom" colspan="7">Clients</th>
+            <th class="border-bottom">
+                <button id="show-form" style="float:right" class="custom-btn-new btn"> + New </button>
+            </th>
+        </tr>
+        {% if active_clients %}
+            {% for client in active_clients %}
+            <tr class="border-bottom">
+                <td colspan="6">
+                    {{ client.name }}
+                    {% if client.protocol == 'openvpn' %}
+                        ({{ client.expiry_date }})
+                    {% elif client.creation_date %}
+                        ({{ client.creation_date }})
+                    {% endif %}
+
+                    {% if client.connected and client.enabled %}
+                    <br><small>
+                        {{ client.connected.remote_ip }}
+                        {% if client.connected.virtual_ip %}
+                            · {{ client.connected.virtual_ip }}
+                        {% endif %}
+                        · <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" viewBox="0 0 16 16" transform="scale(1, 1)">
+                            <path fill-rule="evenodd" d="M8 1a.5.5 0 0 1 .5.5v11.793l3.146-3.147a.5.5 0 0 1 .708.708l-4 4a.5.5 0 0 1-.708 0l-4-4a.5.5 0 0 1 .708-.708L7.5 13.293V1.5A.5.5 0 0 1 8 1z" stroke-width="0" stroke="#ff0000"></path>
+                        </svg> {{ client.connected.bytes_received }}
+                        · <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" viewBox="0 0 16 16" transform="scale(1, -1)">
+                            <path fill-rule="evenodd" d="M8 1a.5.5 0 0 1 .5.5v11.793l3.146-3.147a.5.5 0 0 1 .708.708l-4 4a.5.5 0 0 1-.708 0l-4-4a.5.5 0 0 1 .708-.708L7.5 13.293V1.5A.5.5 0 0 1 8 1z"></path>
+                        </svg> {{ client.connected.bytes_sent }}
+                        · <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" viewBox="0 0 16 16">
+                            <path d="M6.445 11.688V6.354h-.633A12.6 12.6 0 0 0 4.5 7.16v.695c.375-.257.969-.62 1.258-.777h.012v4.61h.675zm1.188-1.305c.047.64.594 1.406 1.703 1.406 1.258 0 2-1.066 2-2.871 0-1.934-.781-2.668-1.953-2.668-.926 0-1.797.672-1.797 1.809 0 1.16.824 1.77 1.676 1.77.746 0 1.23-.376 1.383-.79h.027c-.004 1.316-.461 2.164-1.305 2.164-.664 0-1.008-.45-1.05-.82h-.684zm2.953-2.317c0 .696-.559 1.18-1.184 1.18-.601 0-1.144-.383-1.144-1.2 0-.823.582-1.21 1.168-1.21.633 0 1.16.398 1.16 1.23z"/>
+                            <path d="M3.5 0a.5.5 0 0 1 .5.5V1h8V.5a.5.5 0 0 1 1 0V1h1a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2h1V.5a.5.5 0 0 1 .5-.5zM1 4v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V4H1z"/>
+                        </svg> {{ client.connected.connected_since }}
+                    </small>
+                    {% else %}
+                    <br><small class="transparent">-</small>
+                    {% endif %}
+                </td>
+
+                {# Toggle enable/disable — POST form #}
+                <td class="right">
+                    <form method="POST" style="display:inline"
+                          action="{{ url_for('main.disable' if client.enabled else 'main.enable', name=client.name) }}">
+                        <input type="hidden" name="protocol" value="{{ client.protocol }}">
+                        <button type="submit"
+                                class="toggle-btn {{ 'active' if client.enabled else 'inactive' }}"
+                                id="toggleButton{{ client.name }}"></button>
+                    </form>
+                </td>
+
+                {# Action buttons #}
+                <td class="right">
+                    {# Download #}
+                    <a class="custom-btn btn" href="{{ url_for('main.download', name=client.name, protocol=client.protocol) }}">
+                        <svg class="buttons-svg" xmlns="http://www.w3.org/2000/svg" width="28" height="100%" fill="currentColor" viewBox="0 0 16 16">
+                            <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/>
+                            <path d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708l3 3z"/>
+                        </svg>
+                    </a>
+
+                    {# View config #}
+                    <a class="custom-btn btn" href="#" onclick="viewConfig({{ client.name | tojson }}, {{ client.protocol | tojson }}); return false;">
+                        <svg class="buttons-svg" width="28" height="100%" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M7 18H17V16H7V18Z" fill="currentColor"/>
+                            <path d="M17 14H7V12H17V14Z" fill="currentColor"/>
+                            <path d="M7 10H11V8H7V10Z" fill="currentColor"/>
+                            <path fill-rule="evenodd" clip-rule="evenodd" d="M6 2C4.34315 2 3 3.34315 3 5V19C3 20.6569 4.34315 22 6 22H18C19.6569 22 21 20.6569 21 19V9C21 5.13401 17.866 2 14 2H6ZM6 4H13V9H19V19C19 19.5523 18.5523 20 18 20H6C5.44772 20 5 19.5523 5 19V5C5 4.44772 5.44772 4 6 4ZM15 4.10002C16.6113 4.4271 17.9413 5.52906 18.584 7H15V4.10002Z" fill="currentColor"/>
+                        </svg>
+                    </a>
+
+                    {# Revoke/Delete — POST form #}
+                    <form method="POST" style="display:inline"
+                          action="{{ url_for('main.revoke', name=client.name) }}"
+                          onsubmit="return confirm('Are you sure you want to remove the client ' + {{ client.name | tojson }} + '?')">
+                        <input type="hidden" name="protocol" value="{{ client.protocol }}">
+                        <button type="submit" class="custom-btn btn">
+                            <svg class="buttons-svg" xmlns="http://www.w3.org/2000/svg" width="28" height="100%" fill="currentColor" viewBox="0 0 16 16">
+                                <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z"/>
+                                <path fill-rule="evenodd" d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z"/>
+                            </svg>
+                        </button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        {% else %}
+            <tr>
+                <td colspan="8" style="text-align:center;">No clients yet.</td>
+            </tr>
+            <tr>
+                <td colspan="8" style="text-align:center;">
+                    <button id="show-form1" class="custom-btn-new btn"> + New Client</button>
+                </td>
+            </tr>
+        {% endif %}
+    </table>
+
+    {# Expired clients table #}
+    {% if expired_clients %}
+    <table>
+        <tr class="border-bottom-top"><th>Expired</th></tr>
+        {% for client in expired_clients %}
+        <tr>
+            <td class="border-bottom">{{ client.name }} ({{ client.expiry_date }})</td>
+            <td class="border-bottom right">
+                <form method="POST" style="display:inline"
+                      action="{{ url_for('main.revoke', name=client.name) }}"
+                      onsubmit="return confirm('Are you sure you want to remove the client ' + {{ client.name | tojson }} + '?')">
+                    <input type="hidden" name="protocol" value="{{ client.protocol }}">
+                    <button type="submit" class="custom-btn btn">
+                        <svg class="buttons-svg" xmlns="http://www.w3.org/2000/svg" width="28" height="100%" fill="currentColor" viewBox="0 0 16 16">
+                            <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z"/>
+                            <path fill-rule="evenodd" d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z"/>
+                        </svg>
+                    </button>
+                </form>
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+    {% endif %}
+
+    <p>
+        <a target="_blank" href="https://github.com/g8998/pivpn-web">GitHub</a>
+        <span> · </span>
+        <a target="_blank" href="https://pivpn.io">PiVPN Project</a>
+    </p>
+</div>
+
+{# New client popup #}
+<div id="popup-overlay" class="hidden"></div>
+<div id="popup" class="hidden">
+    <h3>New Client</h3>
+    <form onsubmit="return checkName()" action="{{ url_for('main.new_client') }}" method="POST" id="form">
+        <input type="text" id="name" name="name" placeholder="Name" required><br>
+        {% if protocol != 'wireguard' %}
+        <input type="number" id="days" name="days" min="1" max="3650" placeholder="Days (cert validity)" required><br>
+        <input type="password" id="password" name="password" placeholder="Password (Optional)"><br>
+        {% endif %}
+        <button class="close" id="close-form" type="button">Close</button>
+        <input class="submit" type="submit" value="Submit">
+    </form>
+</div>
+
+{# Config viewer popup #}
+<div id="config-overlay" class="hidden"></div>
+<div id="config-popup" class="hidden">
+    <h3 id="config-title">Config File</h3>
+    <pre id="config-content"></pre>
+    <button onclick="copyConfig()">Copy</button>
+    <button onclick="closeConfig()">Close</button>
+</div>
+
+<script src="{{ url_for('static', filename='js/show-form.js') }}"></script>
+<script>
+function viewConfig(name, protocol) {
+    fetch('/clients/' + encodeURIComponent(name) + '/config?protocol=' + encodeURIComponent(protocol))
+        .then(r => r.json())
+        .then(data => {
+            if (data.error) {
+                alert(data.error);
+                return;
+            }
+            document.getElementById('config-title').textContent = 'Config File: ' + data.name;
+            document.getElementById('config-content').textContent = data.config;
+            document.getElementById('config-overlay').classList.remove('hidden');
+            document.getElementById('config-popup').classList.remove('hidden');
+        })
+        .catch(() => alert('Failed to load config'));
+}
+
+function copyConfig() {
+    var text = document.getElementById('config-content').textContent;
+    navigator.clipboard.writeText(text).then(function() {
+        alert('Config copied to clipboard!');
+    }).catch(function() {
+        var ta = document.createElement('textarea');
+        ta.value = text;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+        alert('Config copied to clipboard!');
+    });
+}
+
+function closeConfig() {
+    document.getElementById('config-overlay').classList.add('hidden');
+    document.getElementById('config-popup').classList.add('hidden');
+}
+
+document.getElementById('config-overlay').addEventListener('click', closeConfig);
+</script>
+{% endblock %}

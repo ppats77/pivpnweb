@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% block css %}
+<link type="text/css" rel="stylesheet" href="{{ url_for('static', filename='css/login.css') }}">
+{% endblock %}
+
+{% block body %}
+<script src="{{ url_for('static', filename='js/mobile.js') }}"></script>
+{% if error %}
+<script>alert("{{ error }}");</script>
+{% endif %}
+<div class="container">
+    <div class="brand-logo"></div>
+    <div class="brand-title">PiVPN
+        <div class="version">{{ vpn_version }}</div>
+    </div>
+    <form action="{{ url_for('main.login') }}" method="POST">
+        <div class="inputs">
+            <input type="text" id="user" name="user" placeholder="Username" required>
+            <input type="password" id="password" name="password" placeholder="Password">
+            <input class="button" type="submit" value="Sign in">
+        </div>
+    </form>
+    <p>
+        <a target="_blank" href="https://github.com/g8998/pivpn-web">GitHub</a>
+        <span> · </span>
+        <a target="_blank" href="https://pivpn.io">PiVPN Project</a>
+    </p>
+</div>
+{% endblock %}
