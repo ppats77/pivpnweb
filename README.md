@@ -1,4 +1,4 @@
-# PiVPN Web NG (Next Generation)
+# PiVPN Web
 
 A Python/Flask web interface for managing PiVPN clients. Supports both **OpenVPN** and **WireGuard** protocols.
 
@@ -41,8 +41,8 @@ sudo apt-get update && sudo apt-get install python3 python3-pip python3-venv git
 
 ```bash
 cd /opt
-sudo git clone https://github.com/YOUR_USER/PiVPNNG.git
-cd PiVPNNG
+sudo git clone https://github.com/ppats77/pivpnweb.git pivpn-web
+cd pivpn-web
 
 python3 -m venv venv
 source venv/bin/activate
@@ -87,14 +87,14 @@ Create `/etc/systemd/system/pivpn-web.service`:
 
 ```ini
 [Unit]
-Description=PiVPN Web NG
+Description=PiVPN Web
 After=network.target
 
 [Service]
 Type=simple
 User=YOUR_USERNAME
-WorkingDirectory=/opt/PiVPNNG
-ExecStart=/opt/PiVPNNG/venv/bin/gunicorn --bind 0.0.0.0:8080 --workers 2 run:app
+WorkingDirectory=/opt/pivpn-web
+ExecStart=/opt/pivpn-web/venv/bin/gunicorn --bind 0.0.0.0:8080 --workers 2 run:app
 Restart=always
 
 [Install]
@@ -110,11 +110,13 @@ sudo systemctl enable --now pivpn-web
 ## Project Structure
 
 ```
-PiVPNNG/
+pivpn-web/
 ├── run.py                    # Entry point
+├── run_dev.py                # Dev mode launcher (mock data)
 ├── requirements.txt          # Python dependencies
 ├── Dockerfile
 ├── docker-compose.yml
+├── dev/                      # Mock data for local testing
 ├── app/
 │   ├── __init__.py           # Flask app factory
 │   ├── auth.py               # Authentication (PAM/su)
@@ -146,6 +148,7 @@ PiVPNNG/
 - **Flash messages** — user feedback for operations
 - **Config viewer API** — fetches config via AJAX instead of inline HTML
 - **No inline JavaScript generation** — cleaner frontend code
+- **Dev mode** — run locally with mock data for UI development
 
 ## License
 
