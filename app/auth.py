@@ -3,7 +3,7 @@ from functools import wraps
 
 from flask import redirect, session, url_for
 
-from app.services.pivpn import get_setup_vars
+from app.services.pivpn import DEV_MODE, get_setup_vars
 
 
 def login_required(f):
@@ -24,6 +24,10 @@ def authenticate(username: str, password: str) -> bool:
     pivpn_user = setup.get("install_user", "")
     if username != pivpn_user:
         return False
+
+    # In dev mode, accept any password for the pivpn user
+    if DEV_MODE:
+        return True
 
     try:
         proc = subprocess.run(
