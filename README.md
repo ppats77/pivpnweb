@@ -14,6 +14,7 @@ Rewrite of [pivpn-web](https://github.com/g8998/pivpn-web) from PHP to Python.
 - View and copy configuration files
 - View connected clients with real-time stats (IP, bytes, connection time)
 - Auto-detects installed VPN protocol (OpenVPN, WireGuard, or both)
+- Change system password from the web interface
 - Responsive mobile-friendly design
 - Neumorphic UI
 
@@ -54,7 +55,7 @@ pip install -r requirements.txt
 Create `/etc/sudoers.d/pivpn-web`:
 
 ```bash
-YOUR_USERNAME ALL=(ALL) NOPASSWD: /bin/cat, /bin/sed, /usr/local/bin/pivpn, /usr/bin/wg
+YOUR_USERNAME ALL=(ALL) NOPASSWD: /bin/cat, /bin/sed, /usr/local/bin/pivpn, /usr/bin/wg, /usr/sbin/chpasswd
 ```
 
 ### 5. Run

@@ -320,6 +320,108 @@ a {
   transition: 0.5s;
 }
 
+/* Nav button (password change) */
+.nav-btn {
+  border: none;
+  cursor: pointer;
+  background-color: transparent;
+  margin-left: 10px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+}
+.nav-btn::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  height: 2px;
+  background-color: transparent;
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.3s ease, border-bottom-color 0.3s ease;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+}
+.nav-btn:hover::after {
+  transform: scaleX(1);
+  border-bottom-color: black;
+}
+
+/* Password change popup */
+#password-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.6);
+  z-index: 9999;
+}
+#password-popup {
+  position: fixed;
+  width: 350px;
+  border-radius: 20px;
+  padding: 20px;
+  box-sizing: border-box;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background-color: #f1f1f1;
+  border: 1px solid #ccc;
+  z-index: 10000;
+}
+#password-popup input {
+  display: block;
+  width: 100%;
+  padding: 10px;
+  padding-left: 20px;
+  border: none;
+  outline: none;
+  box-sizing: border-box;
+  background: #ecf0f3;
+  height: 50px;
+  font-size: 14px;
+  border-radius: 50px;
+  box-shadow: inset 6px 6px 6px #cbced1, inset -6px -6px 6px white;
+}
+#password-popup .submit {
+  display: inline;
+  float: right;
+  width: 45%;
+  padding: 10px;
+  border: none;
+  outline: none;
+  box-sizing: border-box;
+  color: white;
+  margin-top: 20px;
+  background: #1a3865;
+  height: 40px;
+  border-radius: 20px;
+  cursor: pointer;
+  font-weight: 900;
+  box-shadow: 6px 6px 6px #cbced1, -6px -6px 6px white;
+  transition: 0.5s;
+}
+#password-popup .close {
+  display: inline;
+  width: 45%;
+  padding: 10px;
+  border: none;
+  outline: none;
+  box-sizing: border-box;
+  color: black;
+  margin-top: 20px;
+  background: white;
+  height: 40px;
+  border-radius: 20px;
+  cursor: pointer;
+  font-weight: 900;
+  box-shadow: 6px 6px 6px #cbced1, -6px -6px 6px white;
+  transition: 0.5s;
+}
+
 /* Toggle switch */
 .toggle-btn,
 [id^="toggleButton"] {
@@ -456,4 +558,18 @@ pre {
 .mobile #config-popup button {
   font-size: 0.9em;
   height: auto;
+}
+.mobile #password-popup {
+  width: 80%;
+}
+.mobile #password-popup h3 {
+  font-size: 2.5em;
+}
+.mobile #password-popup input {
+  height: 2em;
+  font-size: 2em;
+}
+.mobile #password-popup .close {
+  height: 2em;
+  font-size: 2em;
 }

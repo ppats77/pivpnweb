@@ -12,7 +12,7 @@ from flask import (
     url_for,
 )
 
-from app.auth import authenticate, login_required
+from app.auth import authenticate, change_password, login_required
 from app.services.pivpn import (
     create_client,
     detect_vpn_protocol,
@@ -56,6 +56,39 @@ def login():
 def logout():
     session.clear()
     return redirect(url_for("main.login"))
+
+
+@main.route("/change-password", methods=["POST"])
+@login_required
+def password_change():
+    current_pw = request.form.get("current_password", "")
+    new_pw = request.form.get("new_password", "")
+    confirm_pw = request.form.get("confirm_password", "")
+    username = session.get("username", "")
+
+    if not current_pw or not new_pw or not confirm_pw:
+        flash("All fields are required", "error")
+        return redirect(url_for("main.dashboard"))
+
+    if new_pw != confirm_pw:
+        flash("New passwords do not match", "error")
+        return redirect(url_for("main.dashboard"))
+
+    if len(new_pw) < 6:
+        flash("New password must be at least 6 characters", "error")
+        return redirect(url_for("main.dashboard"))
+
+    if not authenticate(username, current_pw):
+        flash("Current password is incorrect", "error")
+        return redirect(url_for("main.dashboard"))
+
+    success, msg = change_password(username, new_pw)
+    if success:
+        flash("Password changed successfully", "success")
+    else:
+        flash(f"Failed to change password: {msg}", "error")
+
+    return redirect(url_for("main.dashboard"))
 
 
 @main.route("/")
