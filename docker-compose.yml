@@ -4,7 +4,8 @@ services:
     container_name: pivpn-web
     restart: unless-stopped
     environment:
-      - SECRET_KEY=${SECRET_KEY:-change-me-in-production}
+      # Leave unset to use a random key generated on first start
+      - SECRET_KEY=${SECRET_KEY:-}
     volumes:
       - /etc/pivpn:/etc/pivpn:ro
       - /etc/openvpn:/etc/openvpn

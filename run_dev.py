@@ -21,4 +21,5 @@ if __name__ == "__main__":
     print("  Login: username=pi, password=anything")
     print("  http://localhost:8080")
     print("=" * 60)
-    app.run(host="0.0.0.0", port=8080, debug=True)
+    # Localhost only: the debugger allows code execution and login accepts any password
+    app.run(host="127.0.0.1", port=8080, debug=True)

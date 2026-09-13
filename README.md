@@ -60,9 +60,14 @@ YOUR_USERNAME ALL=(ALL) NOPASSWD: /bin/cat, /bin/sed, /usr/local/bin/pivpn, /usr
 
 ### 5. Run
 
-**Development:**
+**Quick test (Flask built-in server):**
 ```bash
 python run.py
+```
+
+**Development with mock data** (localhost only, debugger on, any password accepted for user `pi`):
+```bash
+python run_dev.py
 ```
 
 **Production (with gunicorn):**
@@ -81,6 +86,12 @@ docker compose up -d
 ```
 
 Note: The container needs host network mode and privileged access to interact with PiVPN.
+
+Sessions are signed with `SECRET_KEY`. If it is unset, a random key is generated on first start; it is lost when the container is recreated, which only logs users out. To keep sessions across rebuilds, set your own key in `.env`:
+
+```bash
+echo "SECRET_KEY=$(python3 -c 'import secrets; print(secrets.token_hex(32))')" > .env
+```
 
 ## Systemd Service
 
