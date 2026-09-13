@@ -238,26 +238,42 @@ def _parse_openvpn_status_log() -> dict[str, ConnectedClient]:
     if content is None:
         return {}
 
+    # Column positions in CLIENT_LIST rows for OpenVPN 2.4+ (which added the
+    # "Virtual IPv6 Address" column). Replaced by the HEADER line when present.
+    columns = {
+        "Common Name": 1,
+        "Real Address": 2,
+        "Virtual Address": 3,
+        "Bytes Received": 5,
+        "Bytes Sent": 6,
+        "Connected Since": 7,
+    }
+
     clients: dict[str, ConnectedClient] = {}
     for line in content.strip().splitlines():
-        if not line.startswith("CLIENT_LIST"):
+        # status-version 3 uses tabs, status-version 2 uses commas
+        parts = line.split("\t") if "\t" in line else line.split(",")
+
+        if parts[:2] == ["HEADER", "CLIENT_LIST"]:
+            # Drop "HEADER" so indexes line up with the CLIENT_LIST rows
+            columns = {name: i for i, name in enumerate(parts[1:])}
+            continue
+        if parts[0] != "CLIENT_LIST":
             continue
 
-        parts = line.split("\t")
-        if len(parts) < 8:
-            # Try comma separation
-            parts = line.split(",")
-        if len(parts) < 8:
-            continue
+        def col(name: str) -> str:
+            i = columns.get(name)
+            return parts[i] if i is not None and i < len(parts) else ""
 
-        cn = parts[1]
-        remote = parts[2].split(":")[0] if ":" in parts[2] else parts[2]
-        virtual_ip = parts[3]
-        bytes_recv = parts[4]
-        bytes_sent = parts[5]
-        connected_since = parts[6]
-        if len(parts) > 7:
-            connected_since = f"{parts[6]} {parts[7]}"
+        cn = col("Common Name")
+        if not cn:
+            continue
+        real_address = col("Real Address")
+        remote = real_address.split(":")[0] if ":" in real_address else real_address
+        virtual_ip = col("Virtual Address")
+        bytes_recv = col("Bytes Received")
+        bytes_sent = col("Bytes Sent")
+        connected_since = col("Connected Since")
 
         clients[cn] = ConnectedClient(
             remote_ip=remote,
